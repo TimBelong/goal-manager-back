@@ -10,7 +10,7 @@ services:
         condition: service_healthy
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      - ConnectionStrings__DefaultConnection=Host=db;Database=taskmanager;Username=postgres;Password=postgres123
+      - ConnectionStrings__DefaultConnection=Host=db;Database=taskmanager;Username=goals_user_605;Password=Lastofus6059439!
       - Jwt__Key=xK7mN2pQ9vR4tY8wZ1aB3cD5eF6gH0jL=
       - Jwt__Issuer=TaskManagerAPI
       - Jwt__Audience=TaskManagerClient
@@ -34,7 +34,7 @@ services:
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d taskmanager"]
+      test: ["CMD-SHELL", "pg_isready -U goals_user_605 -d taskmanager"]
       interval: 10s
       timeout: 5s
       retries: 5
