@@ -11,7 +11,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ConnectionStrings__DefaultConnection=Host=db;Database=taskmanager;Username=postgres;Password=postgres123
-      - Jwt__Key=YourSuperSecretKeyThatIsAtLeast32CharactersLong!
+      - Jwt__Key=xK7mN2pQ9vR4tY8wZ1aB3cD5eF6gH0jL=
       - Jwt__Issuer=TaskManagerAPI
       - Jwt__Audience=TaskManagerClient
       - Jwt__ExpirationInDays=7
@@ -27,8 +27,8 @@ services:
     image: postgres:16-alpine
     environment:
       - POSTGRES_DB=taskmanager
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres123
+      - POSTGRES_USER=goals_user_605
+      - POSTGRES_PASSWORD=Lastofus6059439!
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
