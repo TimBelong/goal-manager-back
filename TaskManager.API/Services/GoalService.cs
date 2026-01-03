@@ -59,6 +59,25 @@ public class GoalService : IGoalService
         return MapToDto(goal);
     }
 
+    public async Task<GoalDto?> UpdateGoalAsync(Guid goalId, Guid userId, UpdateGoalRequest request)
+    {
+        var goal = await _context.Goals
+            .Where(g => g.Id == goalId && g.UserId == userId)
+            .Include(g => g.Months)
+                .ThenInclude(m => m.Tasks)
+            .Include(g => g.SubGoals)
+            .FirstOrDefaultAsync();
+
+        if (goal == null) return null;
+
+        goal.Title = request.Title;
+        goal.Description = request.Description;
+
+        await _context.SaveChangesAsync();
+
+        return MapToDto(goal);
+    }
+
     public async Task<bool> DeleteGoalAsync(Guid goalId, Guid userId)
     {
         var goal = await _context.Goals

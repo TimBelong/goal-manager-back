@@ -7,6 +7,7 @@ public interface IGoalService
     Task<List<GoalDto>> GetGoalsByUserAsync(Guid userId);
     Task<GoalDto?> GetGoalByIdAsync(Guid goalId, Guid userId);
     Task<GoalDto> CreateGoalAsync(Guid userId, CreateGoalRequest request);
+    Task<GoalDto?> UpdateGoalAsync(Guid goalId, Guid userId, UpdateGoalRequest request);
     Task<bool> DeleteGoalAsync(Guid goalId, Guid userId);
     
     // Months

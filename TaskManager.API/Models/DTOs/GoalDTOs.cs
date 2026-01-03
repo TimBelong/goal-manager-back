@@ -23,6 +23,11 @@ public record CreateSubGoalRequest(
     [Required][MaxLength(500)] string Text
 );
 
+public record UpdateGoalRequest(
+    [Required][MaxLength(200)] string Title,
+    [MaxLength(1000)] string? Description
+);
+
 // Response DTOs
 public record GoalDto(
     Guid Id,

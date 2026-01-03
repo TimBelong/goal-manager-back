@@ -52,6 +52,18 @@ public class GoalsController : ControllerBase
         return CreatedAtAction(nameof(GetGoal), new { id = goal.Id }, goal);
     }
 
+    [HttpPut("{id}")]
+    public async Task<ActionResult<GoalDto>> UpdateGoal(Guid id, [FromBody] UpdateGoalRequest request)
+    {
+        var userId = GetUserId();
+        var goal = await _goalService.UpdateGoalAsync(id, userId, request);
+        
+        if (goal == null)
+            return NotFound();
+        
+        return Ok(goal);
+    }
+
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteGoal(Guid id)
     {
