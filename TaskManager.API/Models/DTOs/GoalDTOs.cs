@@ -7,6 +7,7 @@ public record CreateGoalRequest(
     [Required][MaxLength(200)] string Title,
     [MaxLength(1000)] string? Description,
     [Required] string Type, // "plan" or "subgoals"
+    [Required] string Category,
     int? Year
 );
 
@@ -25,7 +26,8 @@ public record CreateSubGoalRequest(
 
 public record UpdateGoalRequest(
     [Required][MaxLength(200)] string Title,
-    [MaxLength(1000)] string? Description
+    [MaxLength(1000)] string? Description,
+    [Required] string Category
 );
 
 // Response DTOs
@@ -34,6 +36,7 @@ public record GoalDto(
     string Title,
     string? Description,
     string Type,
+    string Category,
     int Year,
     DateTime CreatedAt,
     List<MonthDto>? Months,

@@ -48,6 +48,7 @@ public class GoalService : IGoalService
             Title = request.Title,
             Description = request.Description,
             Type = request.Type.ToLower() == "plan" ? GoalType.Plan : GoalType.SubGoals,
+            Category = Enum.Parse<GoalCategory>(request.Category, true),
             Year = request.Year ?? DateTime.UtcNow.Year,
             UserId = userId,
             CreatedAt = DateTime.UtcNow
@@ -72,6 +73,7 @@ public class GoalService : IGoalService
 
         goal.Title = request.Title;
         goal.Description = request.Description;
+        goal.Category = Enum.Parse<GoalCategory>(request.Category, true);
 
         await _context.SaveChangesAsync();
 
@@ -357,6 +359,7 @@ public class GoalService : IGoalService
             goal.Title,
             goal.Description,
             goal.Type == GoalType.Plan ? "plan" : "subgoals",
+            goal.Category.ToString(),
             goal.Year,
             goal.CreatedAt,
             months,

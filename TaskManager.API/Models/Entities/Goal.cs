@@ -6,12 +6,28 @@ public enum GoalType
     SubGoals
 }
 
+
+public enum GoalCategory
+{
+    PersonalDevelopment,
+    Career,
+    Finance,
+    Health,
+    Sport,
+    Nutrition,
+    Relationships,
+    Habits,
+    Travel,
+    Other
+}
+
 public class Goal
 {
     public Guid Id { get; set; }
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
     public GoalType Type { get; set; }
+    public GoalCategory Category { get; set; }
     public int Year { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
