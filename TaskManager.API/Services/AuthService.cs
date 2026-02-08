@@ -64,6 +64,27 @@ public class AuthService : IAuthService
         return user == null ? null : new UserDto(user.Id, user.Email, user.Name);
     }
 
+    public async Task<bool> DeleteAccountAsync(Guid userId)
+    {
+        var user = await _context.Users
+            .Include(u => u.Goals)
+            .FirstOrDefaultAsync(u => u.Id == userId);
+
+        if (user == null)
+        {
+            return false;
+        }
+
+        // Remove all user's goals (cascade will delete tasks, subgoals, months)
+        _context.Goals.RemoveRange(user.Goals);
+
+        // Remove user
+        _context.Users.Remove(user);
+
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
     private string GenerateJwtToken(User user)
     {
         var jwtSettings = _configuration.GetSection("Jwt");

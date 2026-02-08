@@ -48,20 +48,41 @@ public class AuthController : ControllerBase
     public async Task<ActionResult<UserDto>> GetCurrentUser()
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        
+
         if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
         {
             return Unauthorized();
         }
 
         var user = await _authService.GetUserByIdAsync(userId);
-        
+
         if (user == null)
         {
             return NotFound();
         }
 
         return Ok(user);
+    }
+
+    [Authorize]
+    [HttpDelete("me")]
+    public async Task<ActionResult> DeleteAccount()
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+        {
+            return Unauthorized();
+        }
+
+        var result = await _authService.DeleteAccountAsync(userId);
+
+        if (!result)
+        {
+            return NotFound();
+        }
+
+        return NoContent();
     }
 }
 
