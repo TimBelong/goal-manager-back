@@ -6,6 +6,9 @@ public class SubGoal
     public string Text { get; set; } = string.Empty;
     public bool Completed { get; set; }
     public DateTime? CompletedAt { get; set; }
+    public string? Type { get; set; } // "default" or "kopilka"
+    public decimal? TargetAmount { get; set; }
+    public decimal? CurrentAmount { get; set; }
 
     // Foreign key
     public Guid GoalId { get; set; }

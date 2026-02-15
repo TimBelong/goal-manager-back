@@ -6,9 +6,11 @@ namespace TaskManager.API.Models.DTOs;
 public record CreateGoalRequest(
     [Required][MaxLength(200)] string Title,
     [MaxLength(1000)] string? Description,
-    [Required] string Type, // "plan" or "subgoals"
+    [Required] string Type, // "plan", "subgoals", or "savings"
     [Required] string Category,
-    int? Year
+    int? Year,
+    decimal? TargetAmount,
+    decimal? CurrentAmount
 );
 
 public record CreateMonthRequest(
@@ -21,13 +23,21 @@ public record CreateTaskRequest(
 );
 
 public record CreateSubGoalRequest(
-    [Required][MaxLength(500)] string Text
+    [Required][MaxLength(500)] string Text,
+    string? Type, // "default" or "kopilka"
+    decimal? TargetAmount
 );
 
 public record UpdateGoalRequest(
     [Required][MaxLength(200)] string Title,
     [MaxLength(1000)] string? Description,
-    [Required] string Category
+    [Required] string Category,
+    decimal? TargetAmount,
+    decimal? CurrentAmount
+);
+
+public record UpdateSubGoalAmountRequest(
+    decimal Delta
 );
 
 // Response DTOs
@@ -41,6 +51,8 @@ public record GoalDto(
     DateTime CreatedAt,
     List<MonthDto>? Months,
     List<SubGoalDto>? SubGoals,
+    decimal? TargetAmount,
+    decimal? CurrentAmount,
     int Progress
 );
 
@@ -62,7 +74,10 @@ public record SubGoalDto(
     Guid Id,
     string Text,
     bool Completed,
-    DateTime? CompletedAt
+    DateTime? CompletedAt,
+    string? Type,
+    decimal? TargetAmount,
+    decimal? CurrentAmount
 );
 
 public record DailyActivityDto(
@@ -77,4 +92,3 @@ public record AnalyticsDto(
     int TotalTasks,
     int CurrentStreak
 );
-

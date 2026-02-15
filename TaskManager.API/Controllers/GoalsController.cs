@@ -156,10 +156,22 @@ public class GoalsController : ControllerBase
     {
         var userId = GetUserId();
         var subGoal = await _goalService.ToggleSubGoalAsync(goalId, subGoalId, userId);
-        
+
         if (subGoal == null)
             return NotFound();
-        
+
+        return Ok(subGoal);
+    }
+
+    [HttpPatch("{goalId}/subgoals/{subGoalId}/amount")]
+    public async Task<ActionResult<SubGoalDto>> UpdateSubGoalAmount(Guid goalId, Guid subGoalId, [FromBody] UpdateSubGoalAmountRequest request)
+    {
+        var userId = GetUserId();
+        var subGoal = await _goalService.UpdateSubGoalAmountAsync(goalId, subGoalId, userId, request.Delta);
+
+        if (subGoal == null)
+            return NotFound();
+
         return Ok(subGoal);
     }
 

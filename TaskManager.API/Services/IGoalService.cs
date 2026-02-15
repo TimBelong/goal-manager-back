@@ -22,6 +22,7 @@ public interface IGoalService
     // SubGoals
     Task<SubGoalDto?> AddSubGoalAsync(Guid goalId, Guid userId, CreateSubGoalRequest request);
     Task<SubGoalDto?> ToggleSubGoalAsync(Guid goalId, Guid subGoalId, Guid userId);
+    Task<SubGoalDto?> UpdateSubGoalAmountAsync(Guid goalId, Guid subGoalId, Guid userId, decimal delta);
     Task<bool> DeleteSubGoalAsync(Guid goalId, Guid subGoalId, Guid userId);
     
     // Analytics

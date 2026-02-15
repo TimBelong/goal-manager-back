@@ -42,14 +42,23 @@ public class GoalService : IGoalService
 
     public async Task<GoalDto> CreateGoalAsync(Guid userId, CreateGoalRequest request)
     {
+        var goalType = request.Type.ToLower() switch
+        {
+            "plan" => GoalType.Plan,
+            "savings" => GoalType.Savings,
+            _ => GoalType.SubGoals
+        };
+
         var goal = new Goal
         {
             Id = Guid.NewGuid(),
             Title = request.Title,
             Description = request.Description,
-            Type = request.Type.ToLower() == "plan" ? GoalType.Plan : GoalType.SubGoals,
+            Type = goalType,
             Category = Enum.Parse<GoalCategory>(request.Category, true),
             Year = request.Year ?? DateTime.UtcNow.Year,
+            TargetAmount = request.TargetAmount,
+            CurrentAmount = request.CurrentAmount ?? 0,
             UserId = userId,
             CreatedAt = DateTime.UtcNow
         };
@@ -74,6 +83,8 @@ public class GoalService : IGoalService
         goal.Title = request.Title;
         goal.Description = request.Description;
         goal.Category = Enum.Parse<GoalCategory>(request.Category, true);
+        goal.TargetAmount = request.TargetAmount ?? goal.TargetAmount;
+        goal.CurrentAmount = request.CurrentAmount ?? goal.CurrentAmount;
 
         await _context.SaveChangesAsync();
 
@@ -182,7 +193,7 @@ public class GoalService : IGoalService
         var task = await _context.Tasks
             .Include(t => t.Month)
                 .ThenInclude(m => m.Goal)
-            .FirstOrDefaultAsync(t => t.Id == taskId && t.MonthId == monthId && 
+            .FirstOrDefaultAsync(t => t.Id == taskId && t.MonthId == monthId &&
                                       t.Month.GoalId == goalId && t.Month.Goal.UserId == userId);
 
         if (task == null) return false;
@@ -205,13 +216,16 @@ public class GoalService : IGoalService
             Id = Guid.NewGuid(),
             Text = request.Text,
             Completed = false,
+            Type = request.Type,
+            TargetAmount = request.TargetAmount,
+            CurrentAmount = request.Type == "kopilka" ? 0 : null,
             GoalId = goalId
         };
 
         _context.SubGoals.Add(subGoal);
         await _context.SaveChangesAsync();
 
-        return new SubGoalDto(subGoal.Id, subGoal.Text, subGoal.Completed, subGoal.CompletedAt);
+        return MapSubGoalToDto(subGoal);
     }
 
     public async Task<SubGoalDto?> ToggleSubGoalAsync(Guid goalId, Guid subGoalId, Guid userId)
@@ -233,7 +247,39 @@ public class GoalService : IGoalService
 
         await _context.SaveChangesAsync();
 
-        return new SubGoalDto(subGoal.Id, subGoal.Text, subGoal.Completed, subGoal.CompletedAt);
+        return MapSubGoalToDto(subGoal);
+    }
+
+    public async Task<SubGoalDto?> UpdateSubGoalAmountAsync(Guid goalId, Guid subGoalId, Guid userId, decimal delta)
+    {
+        var subGoal = await _context.SubGoals
+            .Include(sg => sg.Goal)
+            .FirstOrDefaultAsync(sg => sg.Id == subGoalId && sg.GoalId == goalId && sg.Goal.UserId == userId);
+
+        if (subGoal == null || subGoal.Type != "kopilka") return null;
+
+        var newAmount = Math.Max(0, (subGoal.CurrentAmount ?? 0) + delta);
+        if (subGoal.TargetAmount.HasValue)
+        {
+            newAmount = Math.Min(newAmount, subGoal.TargetAmount.Value);
+        }
+
+        subGoal.CurrentAmount = newAmount;
+
+        // Auto-complete when target reached
+        var wasCompleted = subGoal.Completed;
+        subGoal.Completed = subGoal.TargetAmount.HasValue && newAmount >= subGoal.TargetAmount.Value;
+        subGoal.CompletedAt = subGoal.Completed ? (subGoal.CompletedAt ?? DateTime.UtcNow) : null;
+
+        // Record activity if just completed
+        if (subGoal.Completed && !wasCompleted)
+        {
+            await RecordActivityAsync(userId);
+        }
+
+        await _context.SaveChangesAsync();
+
+        return MapSubGoalToDto(subGoal);
     }
 
     public async Task<bool> DeleteSubGoalAsync(Guid goalId, Guid subGoalId, Guid userId)
@@ -266,13 +312,13 @@ public class GoalService : IGoalService
             .ToListAsync();
 
         var totalGoals = goals.Count;
-        
+
         var allTasks = goals
             .Where(g => g.Type == GoalType.Plan)
             .SelectMany(g => g.Months)
             .SelectMany(m => m.Tasks)
             .ToList();
-        
+
         var allSubGoals = goals
             .Where(g => g.Type == GoalType.SubGoals)
             .SelectMany(g => g.SubGoals)
@@ -349,23 +395,37 @@ public class GoalService : IGoalService
             : null;
 
         var subGoals = goal.Type == GoalType.SubGoals
-            ? goal.SubGoals.Select(sg => new SubGoalDto(sg.Id, sg.Text, sg.Completed, sg.CompletedAt)).ToList()
+            ? goal.SubGoals.Select(MapSubGoalToDto).ToList()
             : null;
 
         var progress = CalculateProgress(goal);
+
+        var typeStr = goal.Type switch
+        {
+            GoalType.Plan => "plan",
+            GoalType.Savings => "savings",
+            _ => "subgoals"
+        };
 
         return new GoalDto(
             goal.Id,
             goal.Title,
             goal.Description,
-            goal.Type == GoalType.Plan ? "plan" : "subgoals",
+            typeStr,
             goal.Category.ToString(),
             goal.Year,
             goal.CreatedAt,
             months,
             subGoals,
+            goal.TargetAmount,
+            goal.CurrentAmount,
             progress
         );
+    }
+
+    private static SubGoalDto MapSubGoalToDto(SubGoal sg)
+    {
+        return new SubGoalDto(sg.Id, sg.Text, sg.Completed, sg.CompletedAt, sg.Type, sg.TargetAmount, sg.CurrentAmount);
     }
 
     private static int CalculateProgress(Goal goal)
@@ -376,11 +436,30 @@ public class GoalService : IGoalService
             if (tasks.Count == 0) return 0;
             return (int)Math.Round(100.0 * tasks.Count(t => t.Completed) / tasks.Count);
         }
+        else if (goal.Type == GoalType.Savings)
+        {
+            if (!goal.TargetAmount.HasValue || goal.TargetAmount.Value == 0) return 0;
+            var progress = (double)(goal.CurrentAmount ?? 0) / (double)goal.TargetAmount.Value * 100;
+            return (int)Math.Round(Math.Min(progress, 100));
+        }
         else
         {
             if (goal.SubGoals.Count == 0) return 0;
-            return (int)Math.Round(100.0 * goal.SubGoals.Count(sg => sg.Completed) / goal.SubGoals.Count);
+            double totalWeight = 0;
+            double completedWeight = 0;
+            foreach (var sg in goal.SubGoals)
+            {
+                totalWeight += 1;
+                if (sg.Type == "kopilka" && sg.TargetAmount.HasValue && sg.TargetAmount.Value > 0)
+                {
+                    completedWeight += Math.Min((double)(sg.CurrentAmount ?? 0) / (double)sg.TargetAmount.Value, 1);
+                }
+                else
+                {
+                    completedWeight += sg.Completed ? 1 : 0;
+                }
+            }
+            return (int)Math.Round(completedWeight / totalWeight * 100);
         }
     }
 }
-

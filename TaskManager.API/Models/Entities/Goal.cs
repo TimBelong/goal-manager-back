@@ -3,7 +3,8 @@ namespace TaskManager.API.Models.Entities;
 public enum GoalType
 {
     Plan,
-    SubGoals
+    SubGoals,
+    Savings
 }
 
 
@@ -29,6 +30,8 @@ public class Goal
     public GoalType Type { get; set; }
     public GoalCategory Category { get; set; }
     public int Year { get; set; }
+    public decimal? TargetAmount { get; set; }
+    public decimal? CurrentAmount { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Foreign key
